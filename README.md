@@ -11,7 +11,7 @@ It fetches job postings from the **ScrapingDog API**, processes them with **Goog
 
 ## 📌 Workflow Overview
 
-![Workflow Screenshot](./workflow.png) <!-- Add your updated screenshot here -->
+![Workflow Screenshot](./Workflow_N8N.png) <!-- Add your updated screenshot here -->
 
 ### Steps in the Workflow:
 1. **Schedule Trigger** → Runs daily at a set time.  
