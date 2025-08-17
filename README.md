@@ -133,7 +133,4 @@ MIT License
 
 ```
 
----
-
-Do you also want me to create a **short tagline (1-line description)** for your GitHub repo header so it looks professional at the top?
 ```
