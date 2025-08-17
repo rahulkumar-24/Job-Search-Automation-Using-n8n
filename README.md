@@ -131,6 +131,4 @@ MIT License
 * [LinkedIn](https://www.linkedin.com/in/rahulkumar19k8/)
 * [GitHub](https://github.com/rahulkumar-24)
 
-```
 
-```
