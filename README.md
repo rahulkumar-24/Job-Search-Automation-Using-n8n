@@ -1,24 +1,30 @@
-# 🚀 n8n Job Scraper & Resume Matcher Workflow
 
-This project is an **automated job scraping and matching workflow** built with [n8n](https://n8n.io/) and self-hosted using **Docker**.  
+---
 
-It scrapes job postings via the **ScrapingDog API**, processes them with **Google Gemini (PaLM)**, enriches them with your **resume details**, and stores results into a **Google Sheet** — including **personalized cover letters** and a **match score** against your resume.  
+# 🚀 n8n Job Scraper, Matcher & Email Notifier
+
+This project is an **end-to-end job scraping and resume matching automation** built with [n8n](https://n8n.io/) and self-hosted using **Docker**.  
+
+It fetches job postings from the **ScrapingDog API**, processes them with **Google Gemini**, compares them with your resume, stores structured results into **Google Sheets**, and finally sends you a **daily email with the top job matches**.  
 
 ---
 
 ## 📌 Workflow Overview
 
-![Workflow Screenshot](./workflow.png) <!-- Add your screenshot here -->
+![Workflow Screenshot](./workflow.png) <!-- Add your updated screenshot here -->
 
-The workflow consists of the following steps:
-
+### Steps in the Workflow:
 1. **Schedule Trigger** → Runs daily at a set time.  
 2. **HTTP Request** → Calls ScrapingDog `google_jobs` API to fetch job postings.  
 3. **Message a Model (Gemini)** → Cleans and extracts structured job data.  
-4. **Edit Fields** → Injects resume text.  
-5. **Message a Model 1 (Gemini)** → Generates `match_score` and a personalized `cover_letter`.  
-6. **Code Node** → Parses AI response into JSON.  
-7. **Google Sheets** → Appends/updates structured results in a spreadsheet.  
+4. **Edit Fields** → Injects your resume text.  
+5. **Message a Model 1 (Gemini)** → Adds `match_score` and generates a personalized `cover_letter`.  
+6. **Code Node** → Parses AI response into valid JSON.  
+7. **Append/Update Google Sheet** → Saves structured job data into Google Sheets.  
+8. **Get Rows from Sheet** → Fetches stored job postings.  
+9. **Sort Node** → Sorts jobs based on `match_score`.  
+10. **Code Node (Formatter)** → Prepares top N jobs for email.  
+11. **Send Email (Gmail/SMTP)** → Sends daily summary email with top matches.  
 
 ---
 
@@ -30,82 +36,91 @@ git clone https://github.com/your-username/n8n-job-matcher.git
 cd n8n-job-matcher
 ````
 
-### 2. Docker Setup
+### 2. Import Workflow
 
-Create a `docker-compose.yml` (example):
+* In the n8n UI → Workflows → **Import from File**.
+* Upload the JSON file (`job-matcher-workflow.json`).
 
-```yaml
-version: '3.1'
+### 3. Configure Credentials
 
-services:
-  n8n:
-    image: n8nio/n8n
-    ports:
-      - "5678:5678"
-    environment:
-      - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=admin
-      - N8N_BASIC_AUTH_PASSWORD=admin
-      - SCRAPINGDOG_API_KEY=${SCRAPINGDOG_API_KEY}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-    volumes:
-      - ./n8n_data:/home/node/.n8n
+Inside n8n, configure:
+
+* **ScrapingDog API** → provide your API key.
+* **Google Gemini API** → configure credentials.
+* **Google Sheets OAuth2** → connect to your Google account.
+* **Gmail/SMTP** → set up email sending.
+
+
+
+---
+
+## 🧠 Prompts Used for Gemini Models
+
+You can update or tweak these prompts to improve results.
+
+### 1. Job Data Cleaning Prompt
+
+```
+You are given raw job listings data in JSON format. Extract and transform it into a structured and simplified JSON array where each object contains only the following fields:
+
+- job_title
+- company_name
+- location
+- job_type (from extensions, e.g., Full-time/Part-time)
+- posted_days_ago (from extensions if available)
+- description_summary (shortened to max 200 words)
+- key_responsibilities (list of bullet points if available)
+- key_qualifications (list of bullet points if available)
+- salary (if available, otherwise null)
+- apply_links (list of apply option links)
+
+Input JSON:
+{{ $json }}
+
+Return only the cleaned JSON output with no extra text.
 ```
 
-Start n8n:
+### 2. Resume Matching & Cover Letter Prompt
 
-```bash
-docker compose up -d
+```
+You are a career assistant. 
+
+Here is my resume:
+
+{{ $json.resume_text }}
+
+Here are job postings:
+
+{{ $json.cleaned_jobs }}
+
+For each job:
+- Keep all important fields of the job such as: job_title, company_name, location, job_type, posted_days_ago, summary, responsibilities, qualifications, salary, apply_links.
+- Add a new field `match_score` (rate relevance 1–5).
+- Add a new field `cover_letter` (a short personalized cover letter tailored to this job, based on my resume).
+
+Return only a valid JSON array with all jobs, including match_score and cover_letter. Do not include explanations, notes, markdown, or code block formatting.
 ```
 
-Access at: [http://localhost:5678](http://localhost:5678)
+
 
 ---
 
-### 3. Import Workflow
+## 📊 Output
 
-* Open n8n dashboard → **Workflows** → **Import from File**.
-* Upload `job-matcher-workflow.json`.
+The workflow generates:
 
----
-
-### 4. Configure Credentials
-
-Inside n8n, set up:
-
-* **ScrapingDog API Key**
-* **Google Gemini (PaLM) API**
-* **Google Sheets OAuth2**
-
-⚠️ **Important:**
-
-* Store real keys in `.env` (never commit them).
-* Commit only `.env.example` with placeholders.
+* **Google Sheets log** → all job postings, match score, cover letter.
+* **Daily email summary** → top N job matches (title, company, location, score, and link).
 
 ---
 
-## 📊 Output in Google Sheets
 
-Each job posting will be stored with:
-
-* Job Title
-* Company Name
-* Location
-* Job Type
-* Posted Days Ago
-* Description Summary
-* Responsibilities
-* Qualifications
-* Salary
-* Apply Links
-* Match Score
-* Cover Letter
 
 ---
 
 ## 📜 License
 
-MIT License — free to use and modify.
+MIT License
 
 ---
 
@@ -120,5 +135,5 @@ MIT License — free to use and modify.
 
 ---
 
-
+Do you also want me to create a **short tagline (1-line description)** for your GitHub repo header so it looks professional at the top?
 ```
